@@ -8,11 +8,51 @@
 // YOU WILL DELETE ALL THIS CODE WHEN YOU DO YOUR PROJECT - THIS IS GIVING YOU EXAMPLES OF HOW TO 
 // ACCESS gPasswordHash AND gKey
 
-void decryptData_01(char *data, int sized)
+void decryptData_01(char* data, int sized)
+	
 {
+	int rounds = 0;
 	__asm
 	{
-		nop
+
+		// Clear Registers
+		xor ecx, ecx
+		xor edi, edi
+		xor ebx, ebx
+		xor edx, edx
+		xor eax, eax
+		xor esi, esi
+
+
+		/*
+		*Set up for:
+		* Starting_index[round] = gPasswordHash[0+round*4] * 256 + gPasswordHash[1+round*4];
+		index = Starting_index[round];
+		*/
+
+		mov edi, data // store the address of data into EDI
+		mov ebx, [rounds] // Load the value at the address of rounds into EBX, will use in the future
+		mov esi, gptrPasswordHash // Load the address of gptrPasswordHash into ESI
+		mov al, byte ptr[esi + ebx * 4] // gPasswordHash[0+round*4] 
+		shl eax, 8 // * 256
+		add al, byte ptr[esi + ebx * 4 + 1] //gPasswordHash[1+round*4]
+
+
+		/*
+		*Set up for:
+		* for ( x = 0; x < datalength; x++) { // Note: datalength is passed in
+			data[x] = data[x] ^ gKey[index];
+			}
+		*/
+
+	loop_again: // label
+
+			mov cl, byte ptr[edi + edx] // load a byte from memory at EDI + EDX into CL
+				xor cl, byte ptr[gptrKey + eax] // XOR the byte in CL with the byte in gptrKey
+				mov byte ptr[edi + edx], cl // store result back into EDI + EDX
+				inc edx // increase counter register, edx
+				cmp edx, [datalength] // compare counter with the data length
+				jb loop_again // jump below to label
 	}
 
 	return;
