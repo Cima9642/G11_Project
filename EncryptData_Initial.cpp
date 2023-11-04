@@ -10,10 +10,49 @@
 
 void encryptData_01(char *data, int datalength)
 {
-
+	int rounds = 0;
 	__asm
 	{
-		nop
+		
+		// Clear Registers
+		xor ecx, ecx
+		xor edi, edi
+		xor ebx, ebx
+		xor edx, edx
+		xor eax, eax
+		xor esi, esi
+		
+
+		/*
+		*Set up for:
+		* Starting_index[round] = gPasswordHash[0+round*4] * 256 + gPasswordHash[1+round*4];
+		index = Starting_index[round];
+		*/
+		
+		mov edi, data // store the address of data into EDI
+		mov ebx, [rounds] // Load the value at the address of rounds into EBX, will use in the future
+		mov esi, gptrPasswordHash // Load the address of gptrPasswordHash into ESI
+		mov al, byte ptr[esi + ebx * 4] // gPasswordHash[0+round*4] 
+		shl eax, 8 // * 256
+		add al, byte ptr[esi + ebx * 4 + 1] //gPasswordHash[1+round*4]
+
+
+		/*
+		*Set up for:
+		* for ( x = 0; x < datalength; x++) { // Note: datalength is passed in
+			data[x] = data[x] ^ gKey[index];
+			}
+		*/
+
+		loop_again: // label
+
+		mov cl, byte ptr[edi + edx] // load a byte from memory at EDI + EDX into CL
+		xor cl, byte ptr[gptrKey + eax] // XOR the byte in CL with the byte in gptrKey
+		mov byte ptr[edi + edx], cl // store result back into EDI + EDX
+		inc edx // increase counter register, edx
+		cmp edx, [datalength] // compare counter with the data length
+		jb loop_again // jump below to label
+
 	}
 
 	return;
@@ -62,6 +101,7 @@ int encryptData(char *data, int dataLength)
 		xor byte ptr [edi+1],al		// Exclusive-or the 2nd byte of data with the 14th element of the keyfile
 									// NOTE: Keyfile[14] = 0x21, that value changes the case of a letter and flips the LSB
 									// Capital "B" = 0x42 becomes lowercase "c" since 0x42 xor 0x21 = 0x63
+
 	}
 
 	return resulti;
