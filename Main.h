@@ -4,12 +4,13 @@
 //
 
 // Include Files
+#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <stdio.h>
 #include <io.h>
 
 
-#define _CRT_SECURE_NO_WARNINGS
+
 
 #define CRYPTO_ORDER "DBECA\0"
 #define var_Index -4
@@ -44,8 +45,8 @@ void encryptData_01(char *data, int length);
 void decryptData_01(char *data, int length);
 void encryptData_02(char *data, int length);
 void decryptData_02(char *data, int length);
-int encryptData_03(char *data, int length);
-int decryptData_03(char *data, int length);
+void encryptData_03(char *data, int length);
+void decryptData_03(char *data, int length);
 
 
 // Global Variable Extern Declarations

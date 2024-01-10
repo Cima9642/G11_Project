@@ -1,0 +1,9 @@
+﻿  DecryptData_Initial.cpp
+C:\Users\Guita\Documents\School\CS-3843\G11_Project\G11_Project\G11_Project\G11_Project\Main.h(7,1): warning C4005: '_CRT_SECURE_NO_WARNINGS': macro redefinition
+C:\Users\Guita\Documents\School\CS-3843\G11_Project\G11_Project\G11_Project\G11_Project\Main.h(7,1): message : '_CRT_SECURE_NO_WARNINGS' previously declared on the command line
+  EncryptData_Initial.cpp
+C:\Users\Guita\Documents\School\CS-3843\G11_Project\G11_Project\G11_Project\G11_Project\Main.h(7,1): warning C4005: '_CRT_SECURE_NO_WARNINGS': macro redefinition
+C:\Users\Guita\Documents\School\CS-3843\G11_Project\G11_Project\G11_Project\G11_Project\Main.h(7,1): message : '_CRT_SECURE_NO_WARNINGS' previously declared on the command line
+C:\Users\Guita\Documents\School\CS-3843\G11_Project\G11_Project\G11_Project\G11_Project\EncryptData_Initial.cpp(14,6): warning C4101: 'index': unreferenced local variable
+  Generating Code...
+  G11_Project.vcxproj -> C:\Users\Guita\Documents\School\CS-3843\G11_Project\G11_Project\G11_Project\Debug\G11_Project.exe

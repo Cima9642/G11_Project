@@ -56,7 +56,7 @@
 // Global Variables
 unsigned char gkey[65537];
 unsigned char *gptrKey = gkey;			// used for inline assembly routines, need to access this way for Visual Studio
-char gPassword[256] = "password";
+char gPassword[256] = "SECRET";
 unsigned char gPasswordHash[32];
 unsigned char *gptrPasswordHash = gPasswordHash;	// used for inline assembly routines, need to access this way for Visual Studio
 char gCRYPTO_ORDER[8] = CRYPTO_ORDER;
@@ -70,7 +70,7 @@ char gOutFileName[256];
 char gKeyFileName[256];
 int gOp = 0;			// 1 = encrypt, 2 = decrypt
 int gNumRounds = 1;
-int gMilestone = 4;
+int gMilestone = 1;
 
 
 // code to read the file to encrypt
@@ -102,7 +102,7 @@ int encryptFile(FILE *fptrIn, FILE *fptrOut)
 	switch(gMilestone)
 	{
 	case 1:
-		encryptData_01(buffer, filesize);
+	//	encryptData_01(buffer, filesize);
 		break;
 
 	case 2:
@@ -110,7 +110,7 @@ int encryptFile(FILE *fptrIn, FILE *fptrOut)
 		break;
 
 	case 3:
-		//encryptData_03(buffer, filesize);	// comment out for student version
+		encryptData_03(buffer, filesize);	// comment out for student version
 		break;
 	}
 
@@ -150,7 +150,7 @@ int decryptFile(FILE *fptrIn, FILE *fptrOut)
 	switch(gMilestone)
 	{
 	case 1:
-		decryptData_01(buffer, filesize);
+		//decryptData_01(buffer, filesize);
 		break;
 
 	case 2:
@@ -158,7 +158,7 @@ int decryptFile(FILE *fptrIn, FILE *fptrOut)
 		break;
 
 	case 3:
-		//decryptData_03(buffer, filesize);	// comment out for student version
+		decryptData_03(buffer, filesize);	// comment out for student version
 		break;
 	}
 

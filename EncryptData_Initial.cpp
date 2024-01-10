@@ -1,109 +1,148 @@
-// EncryptData.cpp
+﻿// EncryptData.cpp
 //
 // This file uses the input data and key information to encrypt the input data
 //
 
 #include "Main.h"
 
-// YOU WILL DELETE ALL THIS CODE WHEN YOU DO YOUR PROJECT - THIS IS GIVING YOU EXAMPLES OF HOW TO 
-// ACCESS gPasswordHash AND gKey
 
-void encryptData_01(char *data, int datalength)
+void encryptData_03(char* data, int datalength)
 {
-	int rounds = 0;
+	int startingIndex;
+	unsigned char key;
+	int hop_count;
+	int index;
+
 	__asm
 	{
-		
-		// Clear Registers
-		xor ecx, ecx
-		xor edi, edi
-		xor ebx, ebx
+		//checks if file has nothing in it
+		mov ecx, datalength		// use ecx to store length of the data
+		cmp ecx, 0
+		je EXIT_ASM
+
+		mov edi, data			// put source/destination address in edi
+
+		// get the starting index (M#1)
 		xor edx, edx
+		lea esi, gPasswordHash			// esi is pointing to the gPasswordHash array[0]
+		mov dh, byte ptr[esi]			// dh has value of esi, ( gPasswordHash[0+round*4] * 256 )
+		mov dl, byte ptr[esi + 1]		// starting index is in edx ( gPasswordHash[1+round*4] )
+		mov startingIndex, edx          // don't really need this local variable, but for illustration purposes ( Starting_index[round] = )
+
+		/*MILESTONE #3 GOES HERE*/
 		xor eax, eax
-		xor esi, esi
-		
+		mov ah, byte ptr[esi + 2]		//gPasswordHash[2+round*4] * 256 
+		mov al, byte ptr[esi + 3]		//gPasswordHash[3+round*4]
+		mov hop_count, eax
+		cmp hop_count, 0
+		jne JUMPED_HOP
+		mov hop_count, 0xFFFF;
+	JUMPED_HOP:
+		/*Milestone #3 END*/
 
-		/*
-		*Set up for:
-		* Starting_index[round] = gPasswordHash[0+round*4] * 256 + gPasswordHash[1+round*4];
-		index = Starting_index[round];
-		*/
-		
-		mov edi, data // store the address of data into EDI
-		mov ebx, [rounds] // Load the value at the address of rounds into EBX, will use in the future
-		mov esi, gptrPasswordHash // Load the address of gptrPasswordHash into ESI
-		mov al, byte ptr[esi + ebx * 4] // gPasswordHash[0+round*4] 
-		shl eax, 8 // * 256
-		add al, byte ptr[esi + ebx * 4 + 1] //gPasswordHash[1+round*4]
+		//mov index, edx  //index = Starting_index[round];
+
+		mov bl, byte ptr[edx + gkey]		// bl has the value we will XOR with ( gKey[index] )
+			mov key, bl                     // don't need this local variable either (bl IS the index)
+			xor ecx, ecx	//DO NOT CHANGE THIS VALUE IN THE LOOP!!
+
+			ENCRYPT_LOOP :
+		xor byte ptr[edi + ecx], bl		//data[x] = data[x] ^ gKey[index]
+
+			//MILESTONE #2
+			//TEAM #11 Encode Order: DBECA
+
+			//
+			// (#D) invert bits 0,2,4,7		0x49 -> 0xDC	abcd efgh -> XbcX dXbX
+			//
+
+		xor eax, eax
+			mov al, byte ptr[edi + ecx]
+			xor al, 0x95
+			mov byte ptr[edi + ecx], al
 
 
-		/*
-		*Set up for:
-		* for ( x = 0; x < datalength; x++) { // Note: datalength is passed in
-			data[x] = data[x] ^ gKey[index];
-			}
-		*/
+			// ENCRYPT
+			// (#B) nibble rotate out	0xC4 -> 0x92	abcd efgh -> bcda hefg
+			//
 
-		loop_again: // label
+			xor eax, eax
+			mov al, byte ptr[edi + ecx] //low nibble
+			mov ah, al
+			shl ah, 4
+			and al, 0x0F
+			or ah, al
+			ror ah, 1
+			and ah, 0x0F
 
-		mov cl, byte ptr[edi + edx] // load a byte from memory at EDI + EDX into CL
-		xor cl, byte ptr[gptrKey + eax] // XOR the byte in CL with the byte in gptrKey
-		mov byte ptr[edi + edx], cl // store result back into EDI + EDX
-		inc edx // increase counter register, edx
-		cmp edx, [datalength] // compare counter with the data length
-		jb loop_again // jump below to label
+			xor edx, edx
+			mov dl, byte ptr[edi + ecx]	//high nibble
+			mov dh, dl
+			shr dh, 4
+			and dl, 0xF0
+			or dh, dl
+			rol dh, 1
+			and dh, 0xF0
 
+			or ah, dh
+			mov byte ptr[edi + ecx], ah
+
+
+			//
+			// (#E) rotate 3 bits left	0xDC -> 0xE6	abcd efgh -> defg habc
+			//
+
+			xor eax, eax
+			mov al, byte ptr[edi + ecx]		// Move the byte at the address (edi+ecx) into al
+			rol al, 3	// rotate 3 bits to the left
+			mov byte ptr[edi + ecx], al
+
+
+			//
+			// (#C) reverse bit order	0x92 -> 0x49	abcd efgh -> hgfe dcba
+			//
+
+			xor eax, eax
+			xor edx, edx
+			mov dh, 0x08
+			mov al, byte ptr[edi + ecx] //al is the original byte
+
+			LOOP_REV:
+		rol al, 1	//move MSB into LSB
+			mov dl, 0x01	//dl is a temp, to hold LSB,  dl = 0000 0001
+			and dl, al	//dl now has LSB,	dl = 0000 000a
+			or ah, dl	//ah is our reversed byte, LSB is placed	ah = 0000 000a
+			ror ah, 1	//rotate byte to append bits in rev order	ah = dcba 0000
+
+			dec dh
+			cmp dh, 0
+			jne LOOP_REV
+
+			mov byte ptr[edi + ecx], ah
+
+
+			//
+			// (#A) code table swap		0x43 -> CodeTable[0x43] == 0xC4
+			//
+
+			xor eax, eax
+			xor edx, edx
+			mov al, byte ptr[edi + ecx]		//al is our passed value
+			lea edx, gEncodeTable
+			mov ah, byte ptr[edx + eax]		//ah is now our encoded byte
+
+			mov byte ptr[edi + ecx], ah
+
+			//End of MS#2
+
+
+			inc ecx
+			cmp ecx, datalength
+			jb ENCRYPT_LOOP
+
+			EXIT_ASM :
 	}
 
 	return;
-} // encryptData_01
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-// EXAMPLE code to to show how to access global variables
-int encryptData(char *data, int dataLength)
-{
-	int resulti = 0;
-
-	gdebug1 = 0;				// a couple of global variables that could be used for debugging
-	gdebug2 = 0;				// also can have a breakpoint in C code
-
-	// You can not declare any local variables in C, but should use resulti to indicate any errors
-	// Set up the stack frame and assign variables in assembly if you need to do so
-	// access the parameters BEFORE setting up your own stack frame
-	// Also, you cannot use a lot of global variables - work with registers
-
-	__asm {
-		// you will need to reference some of these global variables
-		// (gptrPasswordHash or gPasswordHash), (gptrKey or gkey), gNumRounds
-
-		// simple example that xors 2nd byte of data with 14th byte in the key file
-		lea esi,gkey				// put the ADDRESS of gkey into esi
-		mov esi,gptrKey;			// put the ADDRESS of gkey into esi (since *gptrKey = gkey)
-
-		lea	esi,gPasswordHash		// put ADDRESS of gPasswordHash into esi
-		mov esi,gptrPasswordHash	// put ADDRESS of gPasswordHash into esi (since unsigned char *gptrPasswordHash = gPasswordHash)
-
-		mov al,byte ptr [esi]				// get first byte of password hash
-		mov al,byte ptr [esi+4]				// get 5th byte of password hash
-		mov ebx,2
-		mov al,byte ptr [esi+ebx]			// get 3rd byte of password hash
-		mov al,byte ptr [esi+ebx*2]			// get 5th byte of password hash
-
-		mov ax,word ptr [esi+ebx*2]			// gets 5th and 6th bytes of password hash ( gPasswordHash[4] and gPasswordHash[5] ) into ax
-		mov eax,dword ptr [esi+ebx*2]		// gets 4 bytes, as in:  unsigned int X = *( (unsigned int*) &gPasswordHash[4] );
-
-		mov al,byte ptr [gkey+ebx]			// get's 3rd byte of gkey[] data
-
-		mov al,byte ptr [gptrKey+ebx]		// THIS IS INCORRECT - will add the address of the gptrKey global variable (NOT the value that gptrKey holds)
-
-		mov al,byte ptr [esi+0xd];			// access 14th byte in gkey[]: 0, 1, 2 ... d is the 14th byte
-		mov edi,data				// Put ADDRESS of first data element into edi
-		xor byte ptr [edi+1],al		// Exclusive-or the 2nd byte of data with the 14th element of the keyfile
-									// NOTE: Keyfile[14] = 0x21, that value changes the case of a letter and flips the LSB
-									// Capital "B" = 0x42 becomes lowercase "c" since 0x42 xor 0x21 = 0x63
-
-	}
-
-	return resulti;
-} // encryptData
+} 
 
